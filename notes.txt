@@ -1,0 +1,33 @@
+Compact Sequence & Quality format
+
+little endian
+optional lossy compression of quality score into 16 bins
+(8 bins require 3 bits => hard to pack into 1 byte)
+supports random access
+optimize for fast decoding
+
+# file header
+magic number
+version number
+specification URL
+data type (generic, Illumina, Illumina paired end, PacBio, Nanopore, etc.)
+read length (0 indicates variable length)
+quality score type (none, Phred+33)
+number of reads
+block size (64 kb)
+read name format
+writer software git commit
+checksum of header
+
+# block header
+number of reads in block
+
+# block data
+read meta data (name)
+
+number of Ns
+positions of Ns
+sequence: 2 bit encoding (00: A, 01: C, 10: G, 11: T)
+
+quality
+

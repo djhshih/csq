@@ -7,3 +7,4 @@ authors = ["David J. H. Shih <djh.shih@gmail.com>"]
 bio = "0.17"
 lz4 = "1.18"
 zstd = "0.4"
+byteorder = "1.2"

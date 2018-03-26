@@ -1,0 +1,9 @@
+[package]
+name = "csq"
+version = "0.1.0"
+authors = ["David J. H. Shih <djh.shih@gmail.com>"]
+
+[dependencies]
+bio = "0.17"
+lz4 = "1.18"
+zstd = "0.4"

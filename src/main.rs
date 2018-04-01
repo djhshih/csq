@@ -140,6 +140,12 @@ fn compress_fastq(src: &Path, dst: &Path) -> Result<()> {
     try!(encoder.write_all(&pseq));
     let cseq = encoder.finish().unwrap();
 
+    let mut encoder = try!(nucl::rlbe::EncoderBuilder::new().build(Vec::new()));
+    try!(encoder.write_all(&pseq));
+    let rlbe_seq = match encoder.finish() {
+        (encoded, _) => encoded
+    };
+
     let mut encoder = try!(zstd::stream::Encoder::new(Vec::new(), 0));
     try!(encoder.write_all(&pqual));
     let cqual = encoder.finish().unwrap();
@@ -169,6 +175,7 @@ fn compress_fastq(src: &Path, dst: &Path) -> Result<()> {
     println!("before: names: {}, seq: {}, qual: {}", names.len(), seq.len(), qual.len());
     println!("pseq: {}, pqual: {}, metas: {}", pseq.len(), pqual.len(), metas.len());
     println!("cmetas: {}", cmetas.len());
+    println!("rlbe_seq: {}", rlbe_seq.len());
     println!("cbqual: {}", cbqual.len());
     println!("after: names: {}, seq: {}, qual: {}", cnames.len(), cseq.len(), cqual.len());
 

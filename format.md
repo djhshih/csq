@@ -16,6 +16,8 @@
 
 All multi-byte values are little endian.
 
+```
+
 File {
     FileHeader
     [Block]
@@ -100,6 +102,7 @@ FileFooter {
 1B  u8  end of file marker (0)
 }
 
+```
 
 ## Comments
 

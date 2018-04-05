@@ -75,7 +75,7 @@ PageHeader {
 }
 
 PageBody {
-   ReadNames | Sequences | Qualities
+    ReadNames | Sequences | Qualities
 }
 
 ReadNames {

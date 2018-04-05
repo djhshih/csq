@@ -14,7 +14,14 @@
 
 ## Format specification
 
-All multi-byte values are little endian.
+- all multi-byte values are little endian
+- reads are sorted by implicit read number
+- each page contains only one type of data (names, sequences, or qualities)
+- max page size before compression is 64 kb (cannot be increased without changing u16 types)
+- default maximum block size is 2048 kb
+- compressed pages are packed into block until maximum block size
+- sequence and quality may be split into multiple blocks (e.g. PacBio data)
+- to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
 
 ```
 
@@ -27,36 +34,36 @@ File {
 FileHeader {
 4B  u32  magic number (C S Q 26)
 1B  u8   version number
-8B  u64  length of data
+8B  u64  total number of bytes in data blocks
 4B  u32  offset to start of data
-1B  u8   sequence enum (generic, Illumina, Pacbio)
-1B  u8   quality score type (none, Phred+33, Phred+64)
-4B  u32  read length (0 indicates variable length)
 4B  u32  writer program commit digest (first 4 bytes)
-3B  FieldsMeta
-XB  ReadNameSchema
+    FieldsMeta
 4B  u32  XxHash32 checksum of header
 }
 
 FieldsMeta {
-1B  u8  read name compression enum (none, lz4, zstd)
-1B  u8  sequence compression enum (none)
-1B  u8  quality score compression enum (none, lz4, zstd)
+4B  u32  read length (0 indicates variable length)
+1B  u8   sequence compression enum (none)
+1B  u8   sequence enum (generic, Illumina, Pacbio)
+1B  u8   quality score compression enum (none, lz4, zstd)
+1B  u8   quality score enum (none, Phred+33, Phred+64)
+1B  u8   read name compression enum (none, lz4, zstd)
+    ReadNameSchema
 }
 
 ReadNameSchema {
-48  u32   size of read name schema
-XB  [u8]  read name schema string
+48  u32   length of read name schema
+XB  [u8]  read name schema string (e.g. @{enum}:{u16}:{enum}:{u8}:{uint}:{uint}:{uint} {u8}:{char}:{u16}:{str})
 }
 
 Block {
     BlockHeader
     [Page]
-    BlockFotter
+    BlockFooter
 }
 
 BlockHeader {
-1B  u8   block size (kb) in power of two (default 20, indicates 2^20 kb = 2024 kb)
+8B  u64  block size after compression
 8B  u64  number of pages
 }
 
@@ -67,11 +74,12 @@ Page {
 }
 
 PageHeader {
-2B  u16  number of bytes (max size is 64 kb)
-         number of reads
-         number of end positions (0 for sequence and quality if fixed-length reads)
-         list of end positions of data for each read
-         bitflags (page type 2 bits; compressed; fresh, continuation; ...)
+2B  u16    number of bytes after compression
+1B  u8     bitflags (page type 2 bits; fresh, continuation; ...)
+2B  u16    number of reads
+XB  [u16]  list of end positions of data for each read (0 if read length is fixed)
+2B  u16    number of stretches of N bases
+XB  [u16]  list of start and end positions of stretches of N bases
 }
 
 PageBody {
@@ -79,15 +87,15 @@ PageBody {
 }
 
 ReadNames {
-         concatenated read names
+XB  [u8]  concatenated read names, possibly compressed
 }
 
 Sequences {
-         concatenated sequences in 2 bit encoding (00: A, 01: C, 10: G, 11: T)
+XB  [u8]  concatenated bitpacked sequences in 2 bit encoding (00: A, 01: C, 10: G, 11: T)
 }
 
 Qualities {
-         concatenated quality scores
+XB  [u8]  concatenated quality scores, possibly compressed
 }
 
 PageFooter {
@@ -103,21 +111,3 @@ FileFooter {
 }
 
 ```
-
-## Comments
-
-- each page contains only one type of data (names, sequences, or qualities)
-- reads are sorted by implicit read number
-- sequence and quality may be split into multiple blocks (e.g. PacBio data)
-- compressed pages are packed into block until target size
-
-Handling of N
-
-option 1
-- quality of 1 indicates sequence = N
-- quality of 0 can be reserved for special purpose...
-
-option 2
-- to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression.
-- number of N blocks
-- (start of N block, end of N block)

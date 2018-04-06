@@ -2,15 +2,16 @@
 
 ## Feature specification
 
+* overall aim: to be superior to gzip in most aspects
 * streaming: one-pass read
 * fast linear access; reasonable random access
 * fast decoding; reasonable compression
 * low memory requirement
+* early detection of truncated data
 * data integrity check and error recovery with limited data loss
-* support short or long reads of fixed or variable length
-* support 'N' bases
+* support for short or long reads of fixed or variable length
+* support for 'N' bases
 * optional lossy compression of quality score into 16 bins
-* superior to gzip in most aspects
 
 ## Format specification
 
@@ -30,7 +31,6 @@
 - quality encoding `lossy_bitpack4`: binned into 16 bins and bitpacked in 4 bits
 
 ```
-
 File {
     FileHeader
     [Block]
@@ -120,5 +120,4 @@ BlockFooter {
 FileFooter {
 1B  u8  end of file marker (0)
 }
-
 ```

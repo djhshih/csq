@@ -16,25 +16,8 @@
 ## Format specification
 
 - all multi-byte values are little endian
+- each line contains: size of data in bytes (blank if variable), data type, and description
 - `[a]` denotes array of elements of type `a`; empty arrays are skipped
-- each page contains only one type of data; possible page types: names, sequenes, qualities
-- max page body size before compression is 64 kb (cannot be increased without changing u16 types)
-- pages may be encoded and/or compressed; they are then written back-to-back within a block until maximum block size
-- default maximum block size is 2048 kb
-- long sequence and quality may be split into multiple pages (e.g. PacBio data);
-  first page is `fresh` and remaining are `continued`
-- page types are interleaved in the order: names, sequences, qualities
-- continuation pages are to be concatenated with the last page of the same type
-- example read name schema: `@{enum}:{u16}:{enum}:{u8}:{uint}:{uint}:{uint} {u8}:{char}:{u16}:{str}`
-- to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
-- sequencing encoding `bitpack2`: bitpacked in 2 bit encoding (00: A, 01: C, 10: G, 11: T)
-- quality encoding `lossy_bitpack4`: binned into 16 bins and bitpacked in 4 bits
-- index structures are stored in the footer, so that a reader may skip them
-
-## Remarks
-
-- page structure limits memory footprint and data loss after corruption; it also helps random access
-- block structure promotes fast sequential IO while allowing small page size
 
 ```
 File {
@@ -137,4 +120,32 @@ Index {
 FileMeta {
 
 }
+
+u8   unsigned 8-bit integer
+u16  unsigned 16-bit integer
+u32  unsigned 32-bit integer
+u64  unsigned 64-bit integer
 ```
+
+- each page contains only one type of data; possible page types: names, sequenes, qualities
+- max page body size before compression is 64 kb (cannot be increased without changing u16 types)
+- pages may be encoded and/or compressed; they are then written back-to-back within a block until maximum block size
+- default maximum block size is 2048 kb
+- long sequence and quality may be split into multiple pages (e.g. PacBio data);
+  first page is `fresh` and remaining are `continued`
+- page types are interleaved in the order: names, sequences, qualities
+- continuation pages are to be concatenated with the last page of the same type
+- example read name schema: `@{enum}:{u16}:{enum}:{u8}:{uint}:{uint}:{uint} {u8}:{char}:{u16}:{str}`
+- to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
+- sequencing encoding `bitpack2`: bitpacked in 2 bit encoding (00: A, 01: C, 10: G, 11: T)
+- quality encoding `lossy_bitpack4`: binned into 16 bins and bitpacked in 4 bits
+
+## Types
+
+
+
+## Remarks
+
+- page structure limits memory footprint and data loss after corruption; it also helps random access
+- block structure promotes fast sequential IO while allowing small page size
+- index structures are stored in the footer, so that a reader may skip them

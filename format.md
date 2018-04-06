@@ -5,8 +5,8 @@
 * overall aim: to be superior to gzip for compressing fastq files in most aspects
 * streaming: one-pass read
 * fast linear access; reasonable random access
-* fast decoding; reasonable compression
-* low memory requirement
+* fast decompression; reasonable compression
+* low memory footprint
 * early detection of truncated data
 * data integrity check and error recovery with limited data loss
 * support for short or long reads of fixed or variable length
@@ -29,6 +29,12 @@
 - to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
 - sequencing encoding `bitpack2`: bitpacked in 2 bit encoding (00: A, 01: C, 10: G, 11: T)
 - quality encoding `lossy_bitpack4`: binned into 16 bins and bitpacked in 4 bits
+- index structures are stored in the footer, so that a reader may skip them
+
+## Remarks
+
+- page structure limits memory footprint and data loss after corruption; it also helps random access
+- block structure promotes fast sequential IO while allowing small page size
 
 ```
 File {
@@ -41,7 +47,8 @@ FileHeader {
 4B  u32  magic number (C S Q 26)
 1B  u8   version number
 8B  u64  total number of bytes in data blocks
-4B  u32  offset to start of data
+4B  u32  offset to start of data blocks
+4B  u32  offset from end of file to start of index
 4B  u32  writer program commit digest (first 4 bytes)
     FieldsMeta
 4B  u32  XxHash32 checksum of header
@@ -58,10 +65,10 @@ FieldsMeta {
 1B  u8   quality score type enum (none, Phred+33, Phred+64)
 1B  u8   quality score encoding (plain, lossy_bitpack4)
 1B  u8   quality score compression enum (none, lz4, zstd)
-    ReadNameSchema
+    NameSchema
 }
 
-ReadNameSchema {
+NameSchema {
 4B  u32   length of read name schema
 XB  [u8]  read name schema string
 }
@@ -118,6 +125,16 @@ BlockFooter {
 }
 
 FileFooter {
+    Index
+    FileMeta
 1B  u8  end of file marker (0)
+}
+
+Index {
+
+}
+
+FileMeta {
+
 }
 ```

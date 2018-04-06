@@ -15,17 +15,17 @@
 ## Format specification
 
 - all multi-byte values are little endian
-- reads are sorted by implicit read number
-- each page contains only one type of data (names, sequences, or qualities)
+- `[a]` denotes array of elements of type `a`; empty arrays are skipped
+- each page contains only one type of data; possible page types: names, sequenes, qualities
 - max page size before compression is 64 kb (cannot be increased without changing u16 types)
 - default maximum block size is 2048 kb
 - compressed pages are packed into block until maximum block size
-- sequence and quality may be split into multiple blocks (e.g. PacBio data)
-- to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
-- long reads are split into multiple pages; first page is fresh and remaining are continuations
+- long sequence and quality may be split into multiple pages (e.g. PacBio data);
+  first page is `fresh` and remaining are `continued`
 - continuation pages are concatenated with the last page of the same type
-- possible page types: names, sequenes, qualities
-- page types are interleaved
+- example read name schema: `@{enum}:{u16}:{enum}:{u8}:{uint}:{uint}:{uint} {u8}:{char}:{u16}:{str}`
+- to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
+- page types are interleaved in the order: names, sequences, qualities
 
 ```
 
@@ -47,17 +47,21 @@ FileHeader {
 
 FieldsMeta {
 4B  u32  read length (0 indicates variable length)
-1B  u8   sequence compression enum (none)
-1B  u8   sequence enum (generic, Illumina, Pacbio)
-1B  u8   quality score compression enum (none, lz4, zstd)
-1B  u8   quality score enum (none, Phred+33, Phred+64)
+1B  u8   read name type enum (none, generic)
+1B  u8   sequence type enum (none, generic, Illumina, Pacbio)
+1B  u8   quality score type enum (none, Phred+33, Phred+64)
+1B  u8   read name encoding (plain)
+1B  u8   sequence encoding (plain, bitpack2)
+1B  u8   quality encoding (plain, lossy_bitpack4)
 1B  u8   read name compression enum (none, lz4, zstd)
+1B  u8   sequence compression enum (none, lz4, zstd)
+1B  u8   quality score compression enum (none, lz4, zstd)
     ReadNameSchema
 }
 
 ReadNameSchema {
 4B  u32   length of read name schema
-XB  [u8]  read name schema string (e.g. @{enum}:{u16}:{enum}:{u8}:{uint}:{uint}:{uint} {u8}:{char}:{u16}:{str})
+XB  [u8]  read name schema string
 }
 
 Block {
@@ -78,12 +82,12 @@ Page {
 }
 
 PageHeader {
+1B  u8     bitflags (page type, 2 bits; fresh, continued; ...)
 2B  u16    number of bytes after compression
-1B  u8     bitflags (page type, 2 bits; fresh, continuation; ...)
 2B  u16    number of reads
-XB  [u16]  list of end positions of data for each read (0 if read length is fixed)
+XB  [u16]  array of end positions of data for each read (skipped if fixed read length)
 2B  u16    number of stretches of N bases
-XB  [u16]  list of start and end positions of stretches of N bases
+XB  [u16]  array of start and end positions of stretches of N bases
 }
 
 PageBody {

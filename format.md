@@ -18,15 +18,15 @@
 - all multi-byte values are little endian
 - `[a]` denotes array of elements of type `a`; empty arrays are skipped
 - each page contains only one type of data; possible page types: names, sequenes, qualities
-- max page size before compression is 64 kb (cannot be increased without changing u16 types)
+- max page body size before compression is 64 kb (cannot be increased without changing u16 types)
+- pages may be encoded and/or compressed; they are then written back-to-back within a block until maximum block size
 - default maximum block size is 2048 kb
-- compressed pages are packed into block until maximum block size
 - long sequence and quality may be split into multiple pages (e.g. PacBio data);
   first page is `fresh` and remaining are `continued`
-- continuation pages are concatenated with the last page of the same type
+- page types are interleaved in the order: names, sequences, qualities
+- continuation pages are to be concatenated with the last page of the same type
 - example read name schema: `@{enum}:{u16}:{enum}:{u8}:{uint}:{uint}:{uint} {u8}:{char}:{u16}:{str}`
 - to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
-- page types are interleaved in the order: names, sequences, qualities
 - sequencing encoding `bitpack2`: bitpacked in 2 bit encoding (00: A, 01: C, 10: G, 11: T)
 - quality encoding `lossy_bitpack4`: binned into 16 bins and bitpacked in 4 bits
 

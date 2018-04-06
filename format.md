@@ -140,10 +140,6 @@ FileMeta {
 - sequencing encoding `bitpack2`: bitpacked in 2 bit encoding (00: A, 01: C, 10: G, 11: T)
 - quality encoding `lossy_bitpack4`: binned into 16 bins and bitpacked in 4 bits
 
-## Types
-
-
-
 ## Remarks
 
 - page structure limits memory footprint and data loss after corruption; it also helps random access

@@ -59,6 +59,19 @@ FieldsMeta {
 NameSchema {
 4B  u32   length of read name schema
 XB  [u8]  read name schema string
+2B  u16   number of name components
+XB  [u8]  name component bitflags (type, 4 bits; unsorted, sorted)
+    [EnumDictionary]
+}
+
+EnumDictionary {
+2B  u16      number of enum levels
+    [Label]  enum labels
+}
+
+Label {
+1B  u16   length of label
+XB  [u8]  label
 }
 
 Block {
@@ -135,10 +148,11 @@ FileMeta {
   first page is `fresh` and remaining are `continued`
 - page types are interleaved in the order: names, sequences, qualities
 - continuation pages are to be concatenated with the last page of the same type
-- example read name schema: `@{enum}:{u16}:{enum}:{u8}:{uint}:{uint}:{uint} {u8}:{char}:{u16}:{str}`
+- example read name schema: `@{machine}:{run}:{cell}:{lane}:{tile}:{x}:{y} {pair}:{filtered}:{flags}:{index}`
 - to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
 - sequencing encoding `bitpack2`: bitpacked in 2 bit encoding (00: A, 01: C, 10: G, 11: T)
 - quality encoding `lossy_bitpack4`: binned into 16 bins and bitpacked in 4 bits
+- name component type enum: `u8 u16 u32 u64 uint i8 i16 i32 i64 int f32 f64 char enum index const`
 
 ## Remarks
 

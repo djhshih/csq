@@ -20,6 +20,11 @@
 - `[a]` denotes array of elements of type `a`; empty arrays are skipped
 
 ```
+u8   unsigned 8-bit integer
+u16  unsigned 16-bit integer
+u32  unsigned 32-bit integer
+u64  unsigned 64-bit integer
+
 File {
     FileHeader
     [Block]
@@ -120,11 +125,6 @@ Index {
 FileMeta {
 
 }
-
-u8   unsigned 8-bit integer
-u16  unsigned 16-bit integer
-u32  unsigned 32-bit integer
-u64  unsigned 64-bit integer
 ```
 
 - each page contains only one type of data; possible page types: names, sequenes, qualities

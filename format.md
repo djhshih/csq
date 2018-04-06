@@ -22,6 +22,10 @@
 - compressed pages are packed into block until maximum block size
 - sequence and quality may be split into multiple blocks (e.g. PacBio data)
 - to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
+- long reads are split into multiple pages; first page is fresh and remaining are continuations
+- continuation pages are concatenated with the last page of the same type
+- possible page types: names, sequenes, qualities
+- page types are interleaved
 
 ```
 
@@ -52,7 +56,7 @@ FieldsMeta {
 }
 
 ReadNameSchema {
-48  u32   length of read name schema
+4B  u32   length of read name schema
 XB  [u8]  read name schema string (e.g. @{enum}:{u16}:{enum}:{u8}:{uint}:{uint}:{uint} {u8}:{char}:{u16}:{str})
 }
 
@@ -75,7 +79,7 @@ Page {
 
 PageHeader {
 2B  u16    number of bytes after compression
-1B  u8     bitflags (page type 2 bits; fresh, continuation; ...)
+1B  u8     bitflags (page type, 2 bits; fresh, continuation; ...)
 2B  u16    number of reads
 XB  [u16]  list of end positions of data for each read (0 if read length is fixed)
 2B  u16    number of stretches of N bases
@@ -83,10 +87,10 @@ XB  [u16]  list of start and end positions of stretches of N bases
 }
 
 PageBody {
-    ReadNames | Sequences | Qualities
+    Names | Sequences | Qualities
 }
 
-ReadNames {
+Names {
 XB  [u8]  concatenated read names, possibly compressed
 }
 

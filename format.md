@@ -2,7 +2,7 @@
 
 ## Feature specification
 
-* overall aim: to be superior to gzip in most aspects
+* overall aim: to be superior to gzip for compressing fastq files in most aspects
 * streaming: one-pass read
 * fast linear access; reasonable random access
 * fast decoding; reasonable compression

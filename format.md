@@ -177,7 +177,7 @@ XB  [u8]  file meta data (e.g. BAM file header)
 
 ## Under consideration
 
-- add block index and page index indicating maximum value of each field in the read name,
-  so that reads with specific field values may be found by bisection searh on sorted fields and
-  reads may be filtered based on field values quickly by skipping blocks and pages whose field range
+- add block index and page index indicating minimum and maximum values of each field of the read name,
+  so that reads with specific values for sorted fields may be found by bisection searh, and
+  filtering based on field values can skip reading blocks and pages whose field range
   fall outside query field values

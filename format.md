@@ -36,7 +36,7 @@ FileHeader {
 1B  u8   version number
 8B  u64  total number of bytes in data blocks
 4B  u32  offset to start of data blocks
-4B  u32  offset from end of file to start of index
+4B  u32  offset from end of file to start of footer
 4B  u32  writer program commit digest (first 4 bytes)
     FieldsMeta
 4B  u32  XxHash32 checksum of header
@@ -81,8 +81,8 @@ Block {
 }
 
 BlockHeader {
-4B  u64  block size after compression
-4B  u64  number of pages
+4B  u32  block size after compression
+4B  u32  number of pages
 }
 
 Page {
@@ -118,7 +118,7 @@ XB  [u8]  concatenated quality scores
 }
 
 PageFooter {
-4B  u64  XxHash32 checkum of page (or 0 if checksum is disabled)
+4B  u32  XxHash32 checkum of page (or 0 if checksum is disabled)
 }
 
 BlockFooter {
@@ -126,17 +126,31 @@ BlockFooter {
 }
 
 FileFooter {
-    Index
+    OffsetIndex
     FileMeta
 1B  u8  end of file marker (0)
 }
 
-Index {
+OffsetIndex {
+8B  u64  total number of indexed reads (0 if no index)
+    [ReadOffset]
+}
 
+ReadOffset {
+1B  u8      hash function enum (none, XxHash32, SHA-256)
+4B  u32     hash of read id
+6B  Offset  offset index to sequence
+6B  Offset  offset index to quality
+}
+
+Offset {
+8B  u64   offset to page
+2B  u16   read number within page
 }
 
 FileMeta {
-
+4B  u32   length of file meta data
+XB  [u8]  file meta data (e.g. BAM file header)
 }
 ```
 
@@ -152,10 +166,18 @@ FileMeta {
 - to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
 - sequencing encoding `bitpack2`: bitpacked in 2 bit encoding (00: A, 01: C, 10: G, 11: T)
 - quality encoding `lossy_bitpack4`: binned into 16 bins and bitpacked in 4 bits
-- name component type enum: `u8 u16 u32 u64 uint i8 i16 i32 i64 int f32 f64 char enum index const`
+- name component type enum: `u8 u16 u32 u64 uint i8 i16 i32 i64 int f32 f64 char str enum index const`
+- writer needs to check that hash of read id is unique; switch to next hashing function if collision detected
 
 ## Remarks
 
 - page structure limits memory footprint and data loss after corruption; it also helps random access
 - block structure promotes fast sequential IO while allowing small page size
 - index structures are stored in the footer, so that a reader may skip them
+
+## Under consideration
+
+- add block index and page index indicating maximum value of each field in the read name,
+  so that reads with specific field values may be found by bisection searh on sorted fields and
+  reads may be filtered based on field values quickly by skipping blocks and pages whose field range
+  fall outside query field values

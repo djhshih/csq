@@ -35,8 +35,8 @@ FileHeader {
 4B  u32  magic number (C S Q 26)
 1B  u8   version number
 8B  u64  total number of bytes in data blocks
-4B  u32  offset to start of data blocks
-4B  u32  offset from end of file to start of footer
+8B  u64  offset to start of data blocks
+8B  u64  offset from end of file to start of footer
 4B  u32  writer program commit digest (first 4 bytes)
     FieldsMeta
 4B  u32  XxHash32 checksum of header

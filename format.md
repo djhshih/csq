@@ -6,7 +6,7 @@
 * streaming: one-pass read
 * fast linear access; reasonable random access
 * fast decompression; reasonable compression
-* low memory footprint
+* small memory footprint
 * early detection of truncated data
 * data integrity check and error recovery with limited data loss
 * support for short or long reads of fixed or variable length
@@ -18,6 +18,7 @@
 - all multi-byte values are little endian
 - each line contains: size of data in bytes (blank if variable), data type, and description
 - `[a]` denotes array of elements of type `a`; empty arrays are skipped
+- positions begins at 0; ranges are half-open: `[start, end)`
 
 ```
 u8   unsigned 8-bit integer
@@ -47,7 +48,7 @@ FieldsMeta {
 1B  u8   read name type enum (generic, schema)
 1B  u8   read name encoding (plain)
 1B  u8   read name compression enum (none, lz4, zstd)
-1B  u8   sequence type enum (generic, Illumina, Pacbio)
+1B  u8   sequence type enum (single, pair)
 1B  u8   sequence encoding (plain, bitpack2)
 1B  u8   sequence compression enum (none, lz4, zstd)
 1B  u8   quality score type enum (Phred+33, Phred+64)
@@ -60,13 +61,13 @@ NameSchema {
 4B  u32   length of read name schema
 XB  [u8]  read name schema string
 2B  u16   number of name components
-XB  [u8]  name component bitflags (type, 4 bits; unsorted, sorted)
+XB  [u8]  name component bitflags (type, 5 bits; unsorted, sorted)
     [EnumDictionary]
 }
 
 EnumDictionary {
 2B  u16      number of enum levels
-    [Label]  enum labels
+    [Label]  ordered enum labels
 }
 
 Label {
@@ -81,7 +82,7 @@ Block {
 }
 
 BlockHeader {
-4B  u32  block size after compression
+4B  u32  number of bytes in block after compression
 4B  u32  number of pages
 }
 
@@ -94,7 +95,7 @@ Page {
 PageHeader {
 1B  u8     bitflags (page type, 2 bits; fresh, continued; ...)
 2B  u16    number of bytes in page body after compression
-2B  u16    number of bytes in page body before compression
+2B  u16    number of positions in page body before compression
 2B  u16    number of variable-length reads (0 if fixed read length)
 XB  [u16]  array of end positions of data for each read (skipped if fixed read length)
 2B  u16    number of stretches of N bases
@@ -144,7 +145,7 @@ ReadOffset {
 }
 
 Offset {
-8B  u64   offset to page
+8B  u64   offset position to page
 2B  u16   read number within page
 }
 
@@ -158,10 +159,12 @@ XB  [u8]  file meta data (e.g. BAM file header)
 - max page body size before compression is 64 kb (cannot be increased without changing u16 types)
 - pages may be encoded and/or compressed; they are then written back-to-back within a block until maximum block size
 - default maximum block size is 2048 kb
+- page types are interleaved in the order: names, sequences, qualities
 - long sequence and quality may be split into multiple pages (e.g. PacBio data);
   first page is `fresh` and remaining are `continued`
-- page types are interleaved in the order: names, sequences, qualities
-- continuation pages are to be concatenated with the last page of the same type
+- continuation pages are to be concatenated with the previous page of the same type (predecessor page);
+- first read of the continuation page will be concatenated to the last read of the predecessor page;
+  read end position may end at the end position of a page while the read continues into the next page
 - example read name schema: `@{machine}:{run}:{cell}:{lane}:{tile}:{x}:{y} {pair}:{filtered}:{flags}:{index}`
 - to avoid vector resizing, N bases are replaced by A, but they will be masked over by N during decompression
 - sequencing encoding `bitpack2`: bitpacked in 2 bit encoding (00: A, 01: C, 10: G, 11: T)
@@ -171,9 +174,11 @@ XB  [u8]  file meta data (e.g. BAM file header)
 
 ## Remarks
 
-- page structure limits memory footprint and data loss after corruption; it also helps random access
+- page structure limits data loss after corruption; it also helps random access
 - block structure promotes fast sequential IO while allowing small page size
-- index structures are stored in the footer, so that a reader may skip them
+- page and block structures help limit memory usage and allows streaming without requiring a 
+  compression and decompression algorithm that natively supports streaming
+- index structures are stored in the footer, so that a reader only reads them if necessary
 
 ## Under consideration
 

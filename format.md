@@ -44,13 +44,13 @@ FileHeader {
 
 FieldsMeta {
 4B  u32  read length (0 indicates variable length)
-1B  u8   read name type enum (none, schema)
+1B  u8   read name type enum (generic, schema)
 1B  u8   read name encoding (plain)
 1B  u8   read name compression enum (none, lz4, zstd)
-1B  u8   sequence type enum (none, generic, Illumina, Pacbio)
+1B  u8   sequence type enum (generic, Illumina, Pacbio)
 1B  u8   sequence encoding (plain, bitpack2)
 1B  u8   sequence compression enum (none, lz4, zstd)
-1B  u8   quality score type enum (none, Phred+33, Phred+64)
+1B  u8   quality score type enum (Phred+33, Phred+64)
 1B  u8   quality score encoding (plain, lossy_bitpack4)
 1B  u8   quality score compression enum (none, lz4, zstd)
     NameSchema
